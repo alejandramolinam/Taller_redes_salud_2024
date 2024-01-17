@@ -4,7 +4,7 @@ title: "Formación de redes: modelos de generación de redes aleatorias"
 
 ## Modelos Nulos
 
-Además de describir una red, usualmente nos interesa conocer los fenómenos que explican la formación de la estructura específica de una red. Para esto se ocupan los "Modelos Nulos" que son redes formadas de manera aleatoria que preservan alguna propiedad de la red que se quiere estudiar. Luego, se comparan métricas descriptivas de la red sintética con las métricas de la red que estamos estudiando.
+Además de describir una red, usualmente nos interesa conocer los fenómenos que explican la formación de la estructura específica de una red. Para esto se ocupan los "Modelos Nulos" que son redes formadas de manera aleatoria que preservan alguna propiedad de la red que se quiere estudiar. Luego, se comparan métricas descriptivas de la red sintética con las métricas de la red que estamos estudiando, para saber si nuestra red pudo formarse con el mismo mecanismo usado para generar la red aleatoria.
 
 Con esta metodología se intenta buscar las variables más relevantes o los mecanismos que explican su formación.
 
@@ -34,12 +34,14 @@ library(dplyr)
 Cargamos los datos del archivo de texto, que contiene una columna con los nodos emisores, otra con los nodos receptores y otra columna con el atributo "n" de cada enlace.
 
 ```{r}
-links <- read.csv("datos/movements.csv", header=T, as.is=T) head(links) 
+links <- read.csv("datos/movements.csv", header=T, as.is=T) 
+head(links) 
 ```
 
 ```{r}
 # Convirtiendo los datos a un objeto de igraph: 
 net <- graph_from_data_frame(links, directed=T)  
+l = layout.kamada.kawai(net)
 ```
 
 ### Erdos-Renyi:
@@ -59,7 +61,7 @@ dens <- graph.density(net) # probabilidad de un link
 
 er <- erdos.renyi.game(size, dens)
 
-er.grado <- degree(er)
+er.grado <- igraph::degree(er)
 er.distancia <- round(mean_distance(er),3)
 er.clustering <- round(transitivity(er, type="global"),3)
 
@@ -69,7 +71,7 @@ V(er)$color <- "orange"
 V(er)$label <- V(net)
 E(er)$arrow.mode <- 1
 E(er)$arrow.size <- 0.2
-l <- layout_with_fr(er)
+
 plot(er, main="Erdös-Renyi", layout=l)
 
 
@@ -82,7 +84,7 @@ er.distancia
 er.clustering
 
 print("Red real")
-net.degree<-degree(net)
+net.degree<-igraph::degree(net)
 net.distancia <- round(mean_distance(net),3) 
 net.clustering <- round(transitivity(net, type="global"),3)
 
@@ -106,7 +108,7 @@ net.clustering
 
 # parametros: tama?o (size), minima cantidad de conexiones (3 - triada), rewiring (0.1) pq se parte de una red regular
 sm <- watts.strogatz.game(1,size,3,0.1) # estoy asumiendo vecindarios de 3 nodos y rewiring de 0.1 (se puede mejorar la precisión)
-sm.grado <- degree(sm)
+sm.grado <- igraph::degree(sm)
 
 V(sm)$size <- sm.grado*1.5
 V(sm)$frame.color <- "white"
@@ -114,7 +116,7 @@ V(sm)$color <- "orange"
 V(sm)$label <- V(net)
 E(sm)$arrow.mode <- 1
 E(sm)$arrow.size <- 0.2
-l <- layout_with_fr(sm)
+
 plot(sm, main="Strogatz-Watts", layout=l)
 
 sm.distancia <- round(mean_distance(sm),3)
@@ -141,7 +143,7 @@ sm.clustering <- round(transitivity(sm, type="global"),3)
 # algorithm: The algorithm to use for the graph generation.
 # start.graph: ... If a graph, then the supplied graph is used as a starting graph for the preferential attachment algorithm. 
 pa <- barabasi.game(size,power=1, m=2, directed=F, algorithm="psumtree") 
-pa.grado <- degree(pa)
+pa.grado <- igraph::degree(pa)
 
 V(pa)$size <- pa.grado*1.5
 V(pa)$frame.color <- "white"
@@ -149,7 +151,7 @@ V(pa)$color <- "orange"
 V(pa)$label <- V(net)
 E(pa)$arrow.mode <- 1
 E(pa)$arrow.size <- 0.2
-l <- layout_with_fr(pa)
+
 plot(pa, main="Strogatz-Watts", layout=l)
 
 pa.distancia <- round(mean_distance(pa),3)
@@ -157,7 +159,7 @@ pa.clustering <- round(transitivity(pa, type="global"),3)
 
 ```
 
-### Comparación
+### Comparación de métricas
 
 Comparemos los 3 modelos nulos con la red real:
 

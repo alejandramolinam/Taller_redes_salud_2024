@@ -40,7 +40,7 @@ head(links)
 
 Ahora vamos a convertir el Data Frame que acabamos de crear en un objeto "igraph" para trabajar con las funciones del paquete.
 
-La función *graph_from_data_frame* puede tener como input el data frame completo, en ese caso leerá las primeras dos columnas como los nodos de input y output y el resto de columnas como atributos de los enlaces. La variable *directed* para indicar si es una red dirigida (T: true) o no (F: false).
+La función *graph_from_data_frame* puede tener como input el data frame completo, en ese caso leerá las primeras dos columnas como los nodos de input y output y el resto de columnas como atributos de los enlaces. La variable *directed* la usamos para indicar si es una red dirigida (T: true) o no (F: false).
 
 Opcionalmente se le puede pasar a la función un vector con los nodos (esto último es útil en caso de que hayan nodos isla, si no se entrega ese vector los nodos los extrae de los enlaces).
 
@@ -61,7 +61,10 @@ E(net) # ENLACES
 ```
 
 ```{r}
-plot(net, edge.arrow.size=.4, vertex.label=NA)
+#l = layout.fruchterman.reingold(net)
+set.seed(999)
+l = layout.kamada.kawai(net)
+plot(net, edge.arrow.size=.4, vertex.size = 20, layout=l, vertex.label = c(1:12))
 ```
 
 Podemos remover los enlaces repetidos y los enlaces que son de un mismo nodo hacia si mismo (loops):
@@ -73,7 +76,7 @@ net <- simplify(net, remove.multiple = T, remove.loops = T)
 
 ### Matriz de adyacencia
 
-La matriz de adyacencia tiene en los ejes los nodos de la red y cada valor de la matriz es 1 si existe ese enlace y 0 si no, tambien puede ser el atributo de un enlace, si es que se especifica dentro de la función:
+La matriz de adyacencia es otra manera de representar una red, es una matriz que tiene en los ejes x e y los nodos de la red y cada valor de la matriz es 1 si existe ese enlace y 0 si no.
 
 ```{r}
 # Si lo necesitamos, podemos extraer la lista de enlaces (edgelist) o la matriz desde la red de igraph.
@@ -88,9 +91,10 @@ as_adjacency_matrix(net)
 Una propiedad clave de cada nodo es su grado, que representa el número de enlaces que tiene con otros nodos. Usualmente se denomina con $k_i$ el grado del i-esimo nodo de la red. En una red dirigida vamos a hablar de *in-degree* para la cantidad de enlaces que llegan dirigidos hacia un nodo, y de *out-degree* para la cantidad de enlaces que salen desde un nodo hacia otros.
 
 ```{r}
-net.degree<-degree(net)
-degree(net, mode="in")
-degree(net, mode="out")
+net.degree<-igraph::degree(net)
+igraph::degree(net)
+igraph::degree(net, mode="in")
+igraph::degree(net, mode="out")
 ```
 
 Una medida descriptiva interesante de una red es la distribución de grado, es decir, cuantos nodos tenemos con cada cantidad de enlaces. Esta distribución nos puede dar pistas sobre la estructura de la red (aleatoria, de mundo pequeño, libre escala).
@@ -105,32 +109,35 @@ grado.tabla
 
 ```
 
-```{r}
-plot(grado.tabla$Grado,grado.tabla$Porcentaje)
-
-```
-
 ### Densidad
 
-La densidad de la red es el número total de enlaces (orden de la red) sobre el número total de enlaces posibles (si todos los nodos estuvieran conectados con todos).
+La densidad de la red es la proporción de enlaces existentes, se calcula como el número total de enlaces (orden de la red) sobre el número total de enlaces posibles (si todos los nodos estuvieran conectados con todos, es decir, un grafo completo).
 
 ```{r}
 net.densidad <- edge_density(net)
 net.densidad
 ```
 
+Por ejemplo, en ciencias sociales, una red de personas densa podría indicar un mayor capital social de vinculación .
+
 ### Clustering
 
-El clustering de un nodo es la densidad del nodo, es decir, el número de enlaces del nodo, dividido por el número total de enlaces que podrían formar los vecinos del nodo.
+El clustering de un nodo es la densidad del nodo, es decir, el número de enlaces del nodo, dividido por el número total de enlaces que podrían formar los vecinos del nodo entre ellos.
 
 ```{r}
 net.clustering <- round(transitivity(net, type="global"),3)
 net.clustering
 ```
 
+Por ejemplo, si analizamos una red de personas y nos interesa estudiar contagio, podríamos pensar que un nodo con mayor clustering es un vector más probable de contagio.
+
+<https://www.frontiersin.org/articles/10.3389/fphy.2015.00071/full#:~:text=In%20an%20experiment%20where%20the,faster%20spread%20over%20clustered%20topologies.>
+
 ### Componentes
 
 Una red puede ser dividida en sub redes o componentes cuando hay grupos de nodos que no son alcanzables por otro grupo. En una componente todos los nodos están enlazados a algún otro nodo.
+
+![](figs/clusters.png)
 
 Si en una red todos los nodos son alcanzables por algún camino se dice que es un grafo completo.
 
@@ -157,8 +164,7 @@ gorder(net)
 net.distancia <- round(mean_distance(net),3) 
 net.distancia
 
-distance_table(net)
-shortest_paths(net,"ward_1","ward_12")
+shortest_paths(net,"C_1","C_12")
 #all_shortest_paths(net,"ward_1")
 
 
@@ -174,30 +180,44 @@ Las triadas son conjuntos de 3 nodos, que son la "célula" mínima de una red. E
 triad_census(net)
 ```
 
+Las triadas triangulares son particularmente interesantes para analizar redes sociales, dan cuenta de la fortaleza de los lazos, la estabilidad de los lazos y puede ser un indicador de confianza.
+
+<https://www.sciencedirect.com/science/article/abs/pii/S0378873310000158#:~:text=A%20triad%20in%20a%20directed,as%20shown%20in%20Table%201.>
+
 ### Medidas de Centralidad
 
-Las medidas de centralidad se utilizan para identificar los nodos más importantes de una red bajo distintos criterios. Algunas de las medidas de centralidad más utilizadas son:
+Las medidas de centralidad se utilizan para identificar los nodos más importantes de una red bajo distintos criterios. Las medidas de centralidad más utilizadas son:
 
--   Centralidad de Grado (degree centrality) :
+-   Centralidad de Grado (degree centrality) : Está definida como el grado del nodo. Sirve para identificar los nodos más "populares" de la red.
 
--   Centralidad de Intermediación (betweeness centrality):
+-   Centralidad de Intermediación (betweeness centrality): Mide la cantidad de caminos más cortos entre otros dos nodos que pasan por ese nodo.
 
--   Centralidad de Cercanía (closeness centrality):
+-   Centralidad de Cercanía (closeness centrality): Se calcula como la suma de los caminos más cortos de ese nodo hacia los otros. Esta medida sirve para detectar nodos que pueden difundir información de forma más eficiente.
 
--   Centralidad de Vector Propio (eigenvector centrality): la centralidad de un nodo es una ponderación de la centralidad de los nodos que lo rodean, es decir, un nodo es más central si está conectado con otros nodos que también son centrales.
+-   Centralidad de Vector Propio (eigenvector centrality): la centralidad de un nodo es una ponderación de la centralidad de los nodos que lo rodean, es decir, un nodo es más central bajo esta medida si está conectado con otros nodos que también son centrales.
+
+En este estudio <https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7217518/> analizan las distintas medidas de centralidad para determinar nodos críticos en la dispersión de enfermedades infecciosas. En el estudio indican que:
+
+Los nodos con alta centralidad de grado pueden contagiar a muchas personas, sin embargo, si estos nodos están en la periferia y alejados de los otros nodos de la red, no aportan a la dispersión. Por lo que otras medidas de centralidad también son relevantes de analizar.
+
+La centralidad de vector propio ayuda a identificar nodos que están cercanos a varios nodos centrales, estos nodos son personas que de infectares podrían propagar la enfermedad más rápidamente, al igual que los nodos con más centralidad de cercanía.
+
+Los nodos con alta centralidad de intermediación son nodos que de contagiarse, pueden transmitir la enfermedad a diferentes partes de la red.
+
+Calculemos las centralidades de nuestra red.
 
 ```{r}
 # Calcular grado de centralidad (degree centrality) 
-centralidad_grado <- degree(net) 
+centralidad_grado <- igraph::degree(net) 
 
 # Calcular centralidad de cercanía 
-centralidad_cercania <- closeness(net, normalized = T) 
+centralidad_cercania <- igraph::closeness(net, normalized = T) 
 
 # Calcular la centralidad de intermediación
-centralidad_intermediacion <- betweenness(net, normalized = T)
+centralidad_intermediacion <- igraph::betweenness(net, normalized = T)
 
 # Calcular la centralidad de vector propio
-centralidad_eigen <-eigen_centrality(net)
+centralidad_eigen <-igraph::eigen_centrality(net)
 ```
 
 ```{r}
@@ -233,10 +253,8 @@ V(net)$label <- V(net)
 E(net)$arrow.mode <- 1
 E(net)$arrow.size <- 0.2
 
-#l <- layout_in_circle(net)
-set.seed(1234)
-l <- layout_with_fr(net)
-plot(net, layout=l, main="Centralidad de Grado")
+
+plot(net, layout=l, main="Centralidad de Grado", vertex.label = c(1:12))
 ```
 
 ```{r}
@@ -248,7 +266,7 @@ E(net)$arrow.mode <- 1
 E(net)$arrow.size <- 0.2
 
 
-plot(net, layout=l, , main="Centralidad de Intermediación")
+plot(net, layout=l, , main="Centralidad de Intermediación", vertex.label = c(1:12))
 ```
 
 ```{r}
@@ -260,7 +278,7 @@ E(net)$arrow.mode <- 1
 E(net)$arrow.size <- 0.2
 
 
-plot(net, layout=l, main="Centralidad de Cercanía")
+plot(net, layout=l, main="Centralidad de Cercanía", vertex.label = c(1:12))
 ```
 
 ```{r}
@@ -272,5 +290,5 @@ E(net)$arrow.mode <- 1
 E(net)$arrow.size <- 0.2
 
 
-plot(net, layout=l, main="Centralidad EigenValue")
+plot(net, layout=l, main="Centralidad EigenValue", vertex.label = c(1:12))
 ```
