@@ -131,7 +131,7 @@ net.clustering
 
 Por ejemplo, si analizamos una red de personas y nos interesa estudiar contagio, podríamos pensar que un nodo con mayor clustering es un vector más probable de contagio.
 
-<https://www.frontiersin.org/articles/10.3389/fphy.2015.00071/full#:~:text=In%20an%20experiment%20where%20the,faster%20spread%20over%20clustered%20topologies.>
+<https://doi.org/10.3389/fphy.2015.00071>
 
 ### Componentes
 
@@ -182,7 +182,7 @@ triad_census(net)
 
 Las triadas triangulares son particularmente interesantes para analizar redes sociales, dan cuenta de la fortaleza de los lazos, la estabilidad de los lazos y puede ser un indicador de confianza.
 
-<https://www.sciencedirect.com/science/article/abs/pii/S0378873310000158#:~:text=A%20triad%20in%20a%20directed,as%20shown%20in%20Table%201.>
+<https://doi.org/10.1016/j.socnet.2010.03.004>
 
 ### Medidas de Centralidad
 
