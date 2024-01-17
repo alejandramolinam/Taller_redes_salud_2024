@@ -1,0 +1,50 @@
+project:
+  type: book
+  output-dir: docs
+
+execute: 
+  cache: true
+
+book:
+  title: Modelos de ciencias sociales computacionales para el análisis de redes en salud
+  subtitle: JORNADAS DE CIENCIA DE DATOS Y SALUD PÚBLICA 2024
+  author: Alejandra Molina Phd(c)
+  date: 2024-01-17
+  cover-image: figs/red_intro.png
+  navbar:
+    background: light
+    right:
+      - icon: github
+        href: https://github.com/alejandramolinam/Taller_redes_salud_2024
+        aria-label: GitHub
+
+  chapters: 
+    - index.qmd
+    - 01-descripcion-redes.qmd
+    - 02-redes-aleatorias.qmd
+    - 03-ergm.qmd
+  downloads:
+  - epub
+  - pdf
+
+
+format:
+  html:
+    html-math-method: katex
+    toc: true
+    number-sections: true
+  pdf:
+    geometry: 
+      - top=1in
+      - bottom=1in
+      - left=1in
+      - right=1in
+    fontsize: 12pt
+    fontenc: T1
+    include-in-header: 
+      - text: |
+          \allowdisplaybreaks
+          \usepackage{bm}
+  epub: default
+
+

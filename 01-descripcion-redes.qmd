@@ -1,0 +1,276 @@
+---
+title: "Descripción de la estructura de una red"
+---
+
+En este tutorial veremos algunos conceptos y herramientas básicas para describir y analizar una red usando el paquete *igraph* para R.
+
+## Librerías
+
+```{r echo:false}
+library(igraph)
+library(dplyr)
+
+```
+
+## Base de Datos
+
+Los elementos básicos de una red son un conjunto de Nodos y un conjunto de Enlaces.
+
+-   Nodos: cada componente individual de una red. El tamaño de la red será el número total de nodos que la componen.
+
+-   Enlaces: Interacciones entre los nodos de la red. Se representan como pares de nodos. Pueden ser dirigidos (nodo emisor -\> nodo receptor) o no dirigidos (nodo 1 \<-\> nodo 2). Un nodo puede tener enlaces con uno o varios otros nodos, o con ninguno.
+
+En este ejercicio vamos a usar una base de datos ficticia que va a simular una red de derivaciones de pacientes entre centros. Cada nodo será un centro de salud y cada centro estará enlazado con otro cuando uno de ellos haya derivado pacientes hacia el otro, por lo tanto tenemos una red dirigida (centro emisor -\> centro receptor).
+
+### Atributos
+
+En una red, tanto los nodos como los enlaces pueden tener características que los describan (por ejemplo podríamos tener algún atributo de cada centro, como el número total de población que atiende, el número de funcionarios, presupuesto anual, etc; o los enlaces podrían caracterizarse por el número de pacientes promedio diario que derivan, el traspaso de recursos de un centro a otro, etc). En el caso de este ejemplo, cada enlace tiene el atributo "n"=número total de pacientes derivados en un año.
+
+Los enlaces pueden tener distintos pesos, los pesos de los enlaces nos sirven para comparar las relaciones entre los distintos nodos. No es obligatorio que los enlaces tengan peso (puede haber redes en que todos los enlaces tengan igual peso). En este ejercicio usaremos el atributo "n" como el peso de cada enlace.
+
+### Lectura
+
+Cargamos los datos del archivo de texto, que contiene una columna con los nodos emisores, otra con los nodos receptores y otra columna con el atributo "n" de cada enlace.
+
+```{r}
+links <- read.csv("datos/movements.csv", header=T, as.is=T)
+head(links)
+
+```
+
+Ahora vamos a convertir el Data Frame que acabamos de crear en un objeto "igraph" para trabajar con las funciones del paquete.
+
+La función *graph_from_data_frame* puede tener como input el data frame completo, en ese caso leerá las primeras dos columnas como los nodos de input y output y el resto de columnas como atributos de los enlaces. La variable *directed* para indicar si es una red dirigida (T: true) o no (F: false).
+
+Opcionalmente se le puede pasar a la función un vector con los nodos (esto último es útil en caso de que hayan nodos isla, si no se entrega ese vector los nodos los extrae de los enlaces).
+
+*net \<- graph_from_data_frame(dataframe, vertices=vector_nodos, directed=T)*
+
+```{r}
+# Convirtiendo los datos a un objeto de igraph:
+net <- graph_from_data_frame(links, directed=T) 
+
+```
+
+Veamos los componentes de la red:
+
+```{r}
+# Miramos los nodos y enlaces
+V(net) # VERTICES
+E(net) # ENLACES
+```
+
+```{r}
+plot(net, edge.arrow.size=.4, vertex.label=NA)
+```
+
+Podemos remover los enlaces repetidos y los enlaces que son de un mismo nodo hacia si mismo (loops):
+
+```{r}
+# Sacamos los loops del grafo:
+net <- simplify(net, remove.multiple = T, remove.loops = T)
+```
+
+### Matriz de adyacencia
+
+La matriz de adyacencia tiene en los ejes los nodos de la red y cada valor de la matriz es 1 si existe ese enlace y 0 si no, tambien puede ser el atributo de un enlace, si es que se especifica dentro de la función:
+
+```{r}
+# Si lo necesitamos, podemos extraer la lista de enlaces (edgelist) o la matriz desde la red de igraph.
+
+as_adjacency_matrix(net)
+```
+
+## Descripción de redes
+
+### Grados de los nodos:
+
+Una propiedad clave de cada nodo es su grado, que representa el número de enlaces que tiene con otros nodos. Usualmente se denomina con $k_i$ el grado del i-esimo nodo de la red. En una red dirigida vamos a hablar de *in-degree* para la cantidad de enlaces que llegan dirigidos hacia un nodo, y de *out-degree* para la cantidad de enlaces que salen desde un nodo hacia otros.
+
+```{r}
+net.degree<-degree(net)
+degree(net, mode="in")
+degree(net, mode="out")
+```
+
+Una medida descriptiva interesante de una red es la distribución de grado, es decir, cuantos nodos tenemos con cada cantidad de enlaces. Esta distribución nos puede dar pistas sobre la estructura de la red (aleatoria, de mundo pequeño, libre escala).
+
+```{r}
+# distribucion de grado
+grado.dist <- degree_distribution(net)
+grado.tabla <- matrix(c(seq(0:10),100*grado.dist),byrow=F,ncol=2)
+grado.tabla <- as.data.frame(grado.tabla)
+colnames(grado.tabla) <- c("Grado","Porcentaje")
+grado.tabla
+
+```
+
+```{r}
+plot(grado.tabla$Grado,grado.tabla$Porcentaje)
+
+```
+
+### Densidad
+
+La densidad de la red es el número total de enlaces (orden de la red) sobre el número total de enlaces posibles (si todos los nodos estuvieran conectados con todos).
+
+```{r}
+net.densidad <- edge_density(net)
+net.densidad
+```
+
+### Clustering
+
+El clustering de un nodo es la densidad del nodo, es decir, el número de enlaces del nodo, dividido por el número total de enlaces que podrían formar los vecinos del nodo.
+
+```{r}
+net.clustering <- round(transitivity(net, type="global"),3)
+net.clustering
+```
+
+### Componentes
+
+Una red puede ser dividida en sub redes o componentes cuando hay grupos de nodos que no son alcanzables por otro grupo. En una componente todos los nodos están enlazados a algún otro nodo.
+
+Si en una red todos los nodos son alcanzables por algún camino se dice que es un grafo completo.
+
+La sub red que contiene más nodos se denomina Componente Principal.
+
+```{r}
+componentes <- clusters(net)
+componentes
+g <- which.max(componentes$csize) # identificamos el gigante
+subred <- induced.subgraph(net, which(componentes$membership == g)) # nos quedamos con el componente gigante
+V(net)
+V(subred)
+
+```
+
+### Distancias
+
+```{r}
+gsize(net)
+gorder(net)
+```
+
+```{r}
+net.distancia <- round(mean_distance(net),3) 
+net.distancia
+
+distance_table(net)
+shortest_paths(net,"ward_1","ward_12")
+#all_shortest_paths(net,"ward_1")
+
+
+```
+
+### Censo de triadas
+
+Las triadas son conjuntos de 3 nodos, que son la "célula" mínima de una red. En una red dirigida existen múltiples maneras en que 3 nodos pueden estar conectados entre sí. Puede ser interesante saber cuantos tipos de triadas de cada tipo (o de alguno en particular) tiene la red.
+
+![](figs/The-sixteen-isomorphism-classes-of-triad-census-for-directed-networks-D.png)
+
+```{r}
+triad_census(net)
+```
+
+### Medidas de Centralidad
+
+Las medidas de centralidad se utilizan para identificar los nodos más importantes de una red bajo distintos criterios. Algunas de las medidas de centralidad más utilizadas son:
+
+-   Centralidad de Grado (degree centrality) :
+
+-   Centralidad de Intermediación (betweeness centrality):
+
+-   Centralidad de Cercanía (closeness centrality):
+
+-   Centralidad de Vector Propio (eigenvector centrality): la centralidad de un nodo es una ponderación de la centralidad de los nodos que lo rodean, es decir, un nodo es más central si está conectado con otros nodos que también son centrales.
+
+```{r}
+# Calcular grado de centralidad (degree centrality) 
+centralidad_grado <- degree(net) 
+
+# Calcular centralidad de cercanía 
+centralidad_cercania <- closeness(net, normalized = T) 
+
+# Calcular la centralidad de intermediación
+centralidad_intermediacion <- betweenness(net, normalized = T)
+
+# Calcular la centralidad de vector propio
+centralidad_eigen <-eigen_centrality(net)
+```
+
+```{r}
+centralidades <- cbind(centralidad_grado,
+                       round(centralidad_cercania,3),
+                       round(centralidad_intermediacion,3),
+                       round(centralidad_eigen$vector,3)) 
+colnames(centralidades) <- c("grado", "cercania", "intermediacion", "eigen")
+centralidades
+
+```
+
+Encontremos ahora los 5 nodos con mayor grado de centralidad de cada tipo:
+
+```{r}
+top5_degree <- head(sort(centralidad_grado, decreasing = TRUE), 5)
+top5_betweenness <- head(sort(centralidad_intermediacion, decreasing = TRUE), 5)
+top5_closeness <- head(sort(centralidad_cercania, decreasing = TRUE), 5)
+top5_eigenvector <- head(sort(centralidad_eigen$vector, decreasing = TRUE), 5)  # 
+
+top5_degree
+top5_betweenness
+top5_closeness
+top5_eigenvector
+
+```
+
+```{r}
+V(net)$size <- centralidad_grado*1.5
+V(net)$frame.color <- "white"
+V(net)$color <- "orange"
+V(net)$label <- V(net) 
+E(net)$arrow.mode <- 1
+E(net)$arrow.size <- 0.2
+
+#l <- layout_in_circle(net)
+set.seed(1234)
+l <- layout_with_fr(net)
+plot(net, layout=l, main="Centralidad de Grado")
+```
+
+```{r}
+V(net)$size <- centralidad_intermediacion*30
+V(net)$frame.color <- "white"
+V(net)$color <- "orange"
+V(net)$label <- V(net)
+E(net)$arrow.mode <- 1
+E(net)$arrow.size <- 0.2
+
+
+plot(net, layout=l, , main="Centralidad de Intermediación")
+```
+
+```{r}
+V(net)$size <- centralidad_cercania*30
+V(net)$frame.color <- "white"
+V(net)$color <- "orange"
+V(net)$label <- V(net)
+E(net)$arrow.mode <- 1
+E(net)$arrow.size <- 0.2
+
+
+plot(net, layout=l, main="Centralidad de Cercanía")
+```
+
+```{r}
+V(net)$size <- centralidad_eigen$vector*20
+V(net)$frame.color <- "white"
+V(net)$color <- "orange"
+V(net)$label <- V(net)
+E(net)$arrow.mode <- 1
+E(net)$arrow.size <- 0.2
+
+
+plot(net, layout=l, main="Centralidad EigenValue")
+```

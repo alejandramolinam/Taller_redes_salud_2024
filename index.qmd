@@ -1,0 +1,17 @@
+---
+title: Taller de introducción al análisis de redes
+---
+
+## Introducción {.unnumbered}
+
+Las redes están en todas partes, en estos días distintas disciplinas están utilizando el análisis de redes para poder comprender mejor fenómenos complejos.
+
+Este taller tiene como objetivo dar una introducción al análisis de redes para motivarlos a aplicar estas metodologías en sus campos de estudio.
+
+Durante este taller nos enfocaremos en tres temas principales:
+
+-   Descripción de la estructura de una red
+
+-   Formación de redes: modelos de generación de redes aleatorias
+
+-   ERGM: inferencias en la formación de enlaces

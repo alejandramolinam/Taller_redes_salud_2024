@@ -1,0 +1,66 @@
+---
+title: "ERGM: inferencias en la formación de enlaces"
+---
+
+## Expected Random Graph Models (ERGM)
+
+Esta metodología permite calcular la probabilidad de un enlace con un modelo que pondera distintos atributos de la red, de los nodos y de los enlaces.
+
+Funciona con una lógica similar a un modelo "logit" pero en redes.
+
+## Librerías
+
+```{r}
+#| message: false
+#| warning: false
+#| collapse: true
+library(igraph)
+library(dplyr)
+library(ergm)
+library(sna)
+library(texreg)
+library(intergraph)
+```
+
+## Ejemplo: ERGM
+
+Vamos a usar una **red de amistad entre adolescentes simulada** (no son datos reales). En esta red cada nodo tiene los atributos de **consumo de tabaco y de alcohol**.
+
+```{r}
+load('datos/red_adolescentes.Rdata')
+
+net
+
+```
+
+Visualicemos esta red marcando con distinto color a las personas que consumen y no consumen cada sustancia:
+
+```{r}
+set.seed(999) 
+inet <- intergraph::asIgraph(net)
+l = layout.kamada.kawai(inet)
+par(mfrow=c(1,2))
+V(inet)$color <- ifelse(V(inet)$Alcohol == 1, "dodgerblue3","seagreen")
+plot(inet , layout=l, vertex.size = 10, vertex.frame.color = "black", vertex.label.cex = .7, vertex.label = NA, edge.curved = .1, edge.arrow.size = .3)
+legend("topleft", legend=paste('Alcohol',c('Si','No')), pch=21, pt.bg=c("dodgerblue3","seagreen"), horiz = T)
+
+
+V(inet)$color <- ifelse(V(inet)$Tabaco == 1, "gold","slateblue")
+plot(inet , layout=l, vertex.size = 10, vertex.frame.color = "black", vertex.label.cex = .7, vertex.label = NA, edge.curved = .1, edge.arrow.size = .3)
+legend("topleft", legend=paste('Tabaco',c('Si','No')), pch=21, pt.bg=c("gold", "slateblue"), horiz = T)
+
+
+```
+
+```{r}
+mod0 <- ergm(net ~ edges)
+mod1 <- ergm(net ~ edges + nodematch("Tabaco") + nodematch("Alcohol"))
+mod2 <- ergm(net ~ edges + mutual + nodematch("Tabaco") + nodematch("Alcohol"))
+
+
+
+
+screenreg(list(mod0,mod1,mod2))
+
+
+```
